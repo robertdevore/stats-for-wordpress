@@ -1,28 +1,28 @@
 <div class="wrap">
     <h1>
-        <?php esc_html_e( 'Stats for WordPress®', 'sfpw' ); ?>
-        <a id="stats-wp-download-data" href="<?php echo esc_url( add_query_arg( 'action', 'sfpw_download_stats', admin_url( 'admin-post.php' ) ) ); ?>" 
+        <?php esc_html_e( 'Stats for WordPress®', 'sfwp' ); ?>
+        <a id="stats-wp-download-data" href="<?php echo esc_url( add_query_arg( 'action', 'sfwp_download_stats', admin_url( 'admin-post.php' ) ) ); ?>" 
         class="button button-primary" 
         style="margin-left: 15px; float: right;">
             <span class="dashicons dashicons-download" style="margin-right: 5px;"></span>
-            <?php esc_html_e( 'Download', 'sfpw' ); ?>
+            <?php esc_html_e( 'Download', 'sfwp' ); ?>
         </a>
     </h1>
 
     <hr style="margin: 24px 0;" />
 
-    <canvas id="sfpw-chart" width="100%" height="40"></canvas>
+    <canvas id="sfwp-chart" width="100%" height="40"></canvas>
 
-    <div class="sfpw-tables">
+    <div class="sfwp-tables">
         <!-- Most Visited Pages Table -->
-        <div class="sfpw-table">
-            <h2><?php esc_html_e( "Today's Most Visited Pages", 'sfpw' ); ?></h2>
+        <div class="sfwp-table">
+            <h2><?php esc_html_e( "Today's Most Visited Pages", 'sfwp' ); ?></h2>
             <table class="wp-list-table widefat fixed striped">
                 <thead>
                     <tr>
-                        <th><?php esc_html_e( 'Page', 'sfpw' ); ?></th>
-                        <th><?php esc_html_e( 'Unique Visits', 'sfpw' ); ?></th>
-                        <th><?php esc_html_e( 'All Visits', 'sfpw' ); ?></th>
+                        <th><?php esc_html_e( 'Page', 'sfwp' ); ?></th>
+                        <th><?php esc_html_e( 'Unique Visits', 'sfwp' ); ?></th>
+                        <th><?php esc_html_e( 'All Visits', 'sfwp' ); ?></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -40,21 +40,25 @@
                         <?php endforeach; ?>
                     <?php else : ?>
                         <tr>
-                            <td colspan="3"><?php esc_html_e( 'No data available for today.', 'sfpw' ); ?></td>
+                            <td colspan="3"><?php esc_html_e( 'No data available for today.', 'sfwp' ); ?></td>
                         </tr>
                     <?php endif; ?>
                 </tbody>
             </table>
+            <?php if ( $not_found_data && ( $not_found_data->unique_visits || $not_found_data->all_visits ) ) : ?>
+                <h2><?php esc_html_e( '404 Hits', 'sfwp' ); ?></h2>
+                <p><?php printf( esc_html__( 'Unique 404 Hits: %d, Total 404 Hits: %d', 'sfwp' ), $not_found_data->unique_visits, $not_found_data->all_visits ); ?></p>
+            <?php endif; ?>
         </div>
 
         <!-- Top Referrers Table -->
-        <div class="sfpw-table">
-            <h2><?php esc_html_e( 'Top Referrers', 'sfpw' ); ?></h2>
+        <div class="sfwp-table">
+            <h2><?php esc_html_e( 'Top Referrers', 'sfwp' ); ?></h2>
             <table class="wp-list-table widefat fixed striped">
                 <thead>
                     <tr>
-                        <th><?php esc_html_e( 'Referrer', 'sfpw' ); ?></th>
-                        <th><?php esc_html_e( 'Visits', 'sfpw' ); ?></th>
+                        <th><?php esc_html_e( 'Referrer', 'sfwp' ); ?></th>
+                        <th><?php esc_html_e( 'Visits', 'sfwp' ); ?></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -62,14 +66,14 @@
                         <?php foreach ( $referrer_data as $referrer ) : ?>
                             <tr>
                                 <td>
-                                    <?php echo esc_html( $referrer->referrer ? $referrer->referrer : __( 'Direct Traffic', 'sfpw' ) ); ?>
+                                    <?php echo esc_html( $referrer->referrer ? $referrer->referrer : __( 'Direct Traffic', 'sfwp' ) ); ?>
                                 </td>
                                 <td><?php echo esc_html( $referrer->visits ); ?></td>
                             </tr>
                         <?php endforeach; ?>
                     <?php else : ?>
                         <tr>
-                            <td colspan="2"><?php esc_html_e( 'No referrer data available for today.', 'sfpw' ); ?></td>
+                            <td colspan="2"><?php esc_html_e( 'No referrer data available for today.', 'sfwp' ); ?></td>
                         </tr>
                     <?php endif; ?>
                 </tbody>
@@ -80,19 +84,19 @@
 
 <script>
 document.addEventListener( "DOMContentLoaded", function() {
-    const ctx = document.getElementById( "sfpw-chart" ).getContext( "2d" );
+    const ctx = document.getElementById( "sfwp-chart" ).getContext( "2d" );
     new Chart( ctx, {
         type: "bar",
         data: {
             labels: <?php echo wp_json_encode( $dates ); ?>,
             datasets: [
                 {
-                    label: "<?php echo esc_js( __( 'Unique Visits', 'sfpw' ) ); ?>",
+                    label: "<?php echo esc_js( __( 'Unique Visits', 'sfwp' ) ); ?>",
                     data: <?php echo wp_json_encode( $unique_visits ); ?>,
                     backgroundColor: "rgba(54, 162, 235, 0.6)",
                 },
                 {
-                    label: "<?php echo esc_js( __( 'All Visits', 'sfpw' ) ); ?>",
+                    label: "<?php echo esc_js( __( 'All Visits', 'sfwp' ) ); ?>",
                     data: <?php echo wp_json_encode( $all_visits ); ?>,
                     backgroundColor: "rgba(75, 192, 192, 0.6)",
                 }
@@ -102,8 +106,8 @@ document.addEventListener( "DOMContentLoaded", function() {
             responsive: true,
             maintainAspectRatio: false, // Allows dynamic resizing
             scales: {
-                x: { title: { display: true, text: "<?php echo esc_js( __( 'Date', 'sfpw' ) ); ?>" } },
-                y: { title: { display: true, text: "<?php echo esc_js( __( 'Visits', 'sfpw' ) ); ?>" } }
+                x: { title: { display: true, text: "<?php echo esc_js( __( 'Date', 'sfwp' ) ); ?>" } },
+                y: { title: { display: true, text: "<?php echo esc_js( __( 'Visits', 'sfwp' ) ); ?>" } }
             }
         }
     } );
@@ -121,28 +125,28 @@ document.addEventListener( "DOMContentLoaded", function() {
 }
 
 /* Adjust chart height for mobile */
-#sfpw-chart {
+#sfwp-chart {
     max-height: 500px; /* Default height for desktop */
 }
 
 @media ( max-width: 768px ) {
-    #sfpw-chart {
+    #sfwp-chart {
         max-height: 700px; /* Taller height for mobile */
     }
 
-    .sfpw-tables {
+    .sfwp-tables {
         flex-direction: column; /* Stack tables vertically */
     }
 }
 
 /* Flexbox styling for tables */
-.sfpw-tables {
+.sfwp-tables {
     display: flex;
     gap: 20px;
     margin-top: 20px;
 }
 
-.sfpw-table {
+.sfwp-table {
     flex: 1;
 }
 </style>

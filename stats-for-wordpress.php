@@ -30,10 +30,10 @@ defined( 'ABSPATH' ) || exit;
  * @since  1.0.0
  * @return void
  */
-function sfpw_create_stats_table() {
+function sfwp_create_stats_table() {
     global $wpdb;
 
-    $table_name      = $wpdb->prefix . 'sfpw_stats';
+    $table_name      = $wpdb->prefix . 'sfwp_stats';
     $charset_collate = $wpdb->get_charset_collate();
 
     $sql = "CREATE TABLE $table_name (
@@ -50,7 +50,7 @@ function sfpw_create_stats_table() {
     require_once ABSPATH . 'wp-admin/includes/upgrade.php';
     dbDelta( $sql );
 }
-register_activation_hook( __FILE__, 'sfpw_create_stats_table' );
+register_activation_hook( __FILE__, 'sfwp_create_stats_table' );
 
 /**
  * Logs visits on every page load, excluding crawlers and non-page resources.
@@ -58,13 +58,13 @@ register_activation_hook( __FILE__, 'sfpw_create_stats_table' );
  * @since  1.0.0
  * @return void
  */
-function sfpw_log_visit() {
+function sfwp_log_visit() {
     if ( is_admin() ) {
         return;
     }
 
     // Exclude known crawlers/spiders.
-    if ( sfpw_is_crawler() ) {
+    if ( sfwp_is_crawler() ) {
         return;
     }
 
@@ -81,6 +81,7 @@ function sfpw_log_visit() {
         '/xmlrpc.php',
         '/wp-trackback.php',
         '/wp-admin/admin-ajax.php',
+        '/?wc-ajax=get_refreshed_fragments',
 
         // WordPress® admin and asset paths.
         '/wp-admin/',
@@ -99,7 +100,7 @@ function sfpw_log_visit() {
         '/feed/', '/rss/', '/rss2/', '/atom/', '/comments/feed/',
         '/trackback/',
 
-        // Common WordPress plugin paths.
+        // Common WordPress® plugin paths.
         '/wp-content/plugins/woocommerce/',
         '/wp-content/plugins/elementor/',
         '/wp-content/plugins/jetpack/',
@@ -113,38 +114,54 @@ function sfpw_log_visit() {
         '?attachment_id=',
         '?utm_',
         '?amp=',
+
+        // Additional patterns.
+        '/.well-known/',
     ];
 
     // Extract the request path.
-    $request_uri  = $_SERVER['REQUEST_URI'] ?? '';
-    $request_path = parse_url( $request_uri, PHP_URL_PATH );
+    $request_uri = $_SERVER['REQUEST_URI'] ?? '';
+    $parsed_url  = parse_url( $request_uri );
+    $path        = $parsed_url['path'] ?? '';
 
+    // Normalize the path by adding a trailing slash.
+    $path = user_trailingslashit( $path );
+
+    // Reconstruct the page URL without query strings.
+    $page = esc_url_raw( $path );
+
+    // Loop through excluded paths.
     foreach ( $excluded_paths as $excluded ) {
-        if ( stripos( $request_uri, $excluded ) !== false || stripos( $request_path, $excluded ) !== false ) {
+        if ( stripos( $request_uri, $excluded ) !== false || stripos( $path, $excluded ) !== false ) {
             return;
         }
     }
 
+    // Handle 404 pages separately.
+    if ( is_404() ) {
+        $page = '/404';
+    }
+
     global $wpdb;
 
-    $table_name = $wpdb->prefix . 'sfpw_stats';
-    $page       = esc_url_raw( $request_uri );
+    $table_name = $wpdb->prefix . 'sfwp_stats';
 
     // Detect referrer and filter out internal referrers.
     $referrer = isset( $_SERVER['HTTP_REFERER'] ) ? esc_url_raw( $_SERVER['HTTP_REFERER'] ) : null;
-    $site_url = home_url(); // Your site's base URL.
+    $site_url = home_url();
 
+    // Set to null if the referrer is internal.
     if ( $referrer && stripos( $referrer, $site_url ) !== false ) {
-        $referrer = null; // Set to null if the referrer is internal.
+        $referrer = null;
     }
 
     $date = current_time( 'Y-m-d' );
 
     // Check if it's a unique visit using a cookie.
-    $is_unique = ! isset( $_COOKIE['sfpw_unique_visit'] );
+    $is_unique = ! isset( $_COOKIE['sfwp_unique_visit'] );
 
     if ( $is_unique ) {
-        setcookie( 'sfpw_unique_visit', '1', time() + DAY_IN_SECONDS, COOKIEPATH, COOKIE_DOMAIN, is_ssl(), true );
+        setcookie( 'sfwp_unique_visit', '1', time() + DAY_IN_SECONDS, COOKIEPATH, COOKIE_DOMAIN, is_ssl(), true );
     }
 
     // Update or insert visit count.
@@ -165,7 +182,7 @@ function sfpw_log_visit() {
     );
 
 }
-add_action( 'wp', 'sfpw_log_visit' );
+add_action( 'wp', 'sfwp_log_visit' );
 
 /**
  * Determines if the request is from a crawler/spider.
@@ -173,7 +190,7 @@ add_action( 'wp', 'sfpw_log_visit' );
  * @since  1.0.0
  * @return bool True if a crawler is detected, false otherwise.
  */
-function sfpw_is_crawler() {
+function sfwp_is_crawler() {
     $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
 
     // Comprehensive list of known crawler/spider user agents.
@@ -263,18 +280,18 @@ function sfpw_is_crawler() {
  * @since  1.0.0
  * @return void
  */
-function sfpw_register_settings_page() {
+function sfwp_register_settings_page() {
     add_menu_page(
-        esc_html__( 'Stats for WordPress®', 'sfpw' ),
-        esc_html__( 'Stats', 'sfpw' ),
+        esc_html__( 'Stats for WordPress®', 'sfwp' ),
+        esc_html__( 'Stats', 'sfwp' ),
         'manage_options',
-        'sfpw-stats',
-        'sfpw_render_stats_page',
+        'sfwp-stats',
+        'sfwp_render_stats_page',
         'dashicons-chart-bar',
         26
     );
 }
-add_action( 'admin_menu', 'sfpw_register_settings_page' );
+add_action( 'admin_menu', 'sfwp_register_settings_page' );
 
 /**
  * Enqueues Chart.js for stats visualization.
@@ -284,14 +301,14 @@ add_action( 'admin_menu', 'sfpw_register_settings_page' );
  * @since  1.0.0
  * @return void
  */
-function sfpw_enqueue_scripts( $hook ) {
-    if ( $hook !== 'toplevel_page_sfpw-stats' ) {
+function sfwp_enqueue_scripts( $hook ) {
+    if ( $hook !== 'toplevel_page_sfwp-stats' ) {
         return;
     }
 
-    wp_enqueue_script( 'chartjs', 'https://cdn.jsdelivr.net/npm/chart.js', [], null, true );
+    wp_enqueue_script( 'chartjs', plugins_url( 'assets/js/chart.js', __FILE__ ), [], null, true );
 }
-add_action( 'admin_enqueue_scripts', 'sfpw_enqueue_scripts' );
+add_action( 'admin_enqueue_scripts', 'sfwp_enqueue_scripts' );
 
 /**
  * Renders the stats page in the admin area.
@@ -299,15 +316,16 @@ add_action( 'admin_enqueue_scripts', 'sfpw_enqueue_scripts' );
  * @since  1.0.0
  * @return void
  */
-function sfpw_render_stats_page() {
+function sfwp_render_stats_page() {
     global $wpdb;
 
-    $table_name = $wpdb->prefix . 'sfpw_stats';
+    $table_name = $wpdb->prefix . 'sfwp_stats';
 
-    // Fetch daily data for the past week.
+    // Fetch daily data for the past week, excluding 404 pages.
     $results = $wpdb->get_results( "
         SELECT date, SUM(unique_visits) AS unique_visits, SUM(all_visits) AS all_visits
         FROM $table_name
+        WHERE page != '/404'
         GROUP BY date
         ORDER BY date DESC
         LIMIT 7
@@ -317,23 +335,30 @@ function sfpw_render_stats_page() {
     $unique_visits = array_reverse( array_column( $results, 'unique_visits' ) );
     $all_visits    = array_reverse( array_column( $results, 'all_visits' ) );
 
-    // Fetch today's most visited pages.
+    // Fetch today's most visited pages, excluding 404 pages.
     $today      = current_time( 'Y-m-d' );
     $page_data  = $wpdb->get_results( $wpdb->prepare( "
         SELECT page, unique_visits, all_visits
         FROM $table_name
-        WHERE date = %s
+        WHERE date = %s AND page != '/404'
         ORDER BY all_visits DESC
     ", $today ) );
 
     // Fetch top referrers for today.
     $referrer_data = $wpdb->get_results( $wpdb->prepare( "
-        SELECT referrer, COUNT(*) AS visits
-        FROM {$wpdb->prefix}sfpw_stats
-        WHERE date = %s
+        SELECT referrer, SUM(all_visits) AS visits
+        FROM $table_name
+        WHERE date = %s AND page != '/404'
         GROUP BY referrer
         ORDER BY visits DESC
-        LIMIT 10
+        LIMIT 20
+    ", $today ) );
+
+    // Fetch 404 hits for today.
+    $not_found_data = $wpdb->get_row( $wpdb->prepare( "
+        SELECT SUM(unique_visits) AS unique_visits, SUM(all_visits) AS all_visits
+        FROM $table_name
+        WHERE date = %s AND page = '/404'
     ", $today ) );
 
     include plugin_dir_path( __FILE__ ) . 'views/admin-stats-page.php';
@@ -345,9 +370,9 @@ function sfpw_render_stats_page() {
  * @since 1.0.0
  * @return void
  */
-function sfpw_download_stats() {
+function sfwp_download_stats() {
     if ( ! current_user_can( 'manage_options' ) ) {
-        wp_die( esc_html__( 'Unauthorized access.', 'sfpw' ) );
+        wp_die( esc_html__( 'Unauthorized access.', 'sfwp' ) );
     }
 
     global $wpdb;
@@ -359,7 +384,7 @@ function sfpw_download_stats() {
     // Fetch stats data within the date range.
     $results = $wpdb->get_results( $wpdb->prepare( "
         SELECT date, page, referrer, unique_visits, all_visits
-        FROM {$wpdb->prefix}sfpw_stats
+        FROM {$wpdb->prefix}sfwp_stats
         WHERE date BETWEEN %s AND %s
         ORDER BY date ASC
     ", $start_date, $end_date ) );
@@ -386,15 +411,15 @@ function sfpw_download_stats() {
     fclose( $csv_output );
     exit;
 }
-add_action( 'admin_post_sfpw_download_stats', 'sfpw_download_stats' );
+add_action( 'admin_post_sfwp_download_stats', 'sfwp_download_stats' );
 
-function sfpw_update_database() {
+function sfwp_update_database() {
     global $wpdb;
-    $table_name = $wpdb->prefix . 'sfpw_stats';
+    $table_name = $wpdb->prefix . 'sfwp_stats';
 
     $wpdb->query( "ALTER TABLE $table_name ADD COLUMN referrer VARCHAR(255) DEFAULT NULL AFTER page;" );
 }
-register_activation_hook( __FILE__, 'sfpw_update_database' );
+register_activation_hook( __FILE__, 'sfwp_update_database' );
 
 /**
  * Deletes all data from the stats table.
@@ -402,19 +427,19 @@ register_activation_hook( __FILE__, 'sfpw_update_database' );
  * @since 1.0.1
  * @return void
  */
-function sfpw_delete_all_stats_data() {
+function sfwp_delete_all_stats_data() {
     if ( isset( $_GET['delete_stats'] ) && current_user_can( 'manage_options' ) ) {
         global $wpdb;
 
-        $table_name = $wpdb->prefix . 'sfpw_stats';
+        $table_name = $wpdb->prefix . 'sfwp_stats';
 
         // Delete all data from the stats table
         $wpdb->query( "TRUNCATE TABLE $table_name" );
 
         // Add admin notice
         add_action( 'admin_notices', function() {
-            echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'All stats data has been deleted.', 'sfpw' ) . '</p></div>';
+            echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'All stats data has been deleted.', 'sfwp' ) . '</p></div>';
         } );
     }
 }
-add_action( 'admin_init', 'sfpw_delete_all_stats_data' );
+add_action( 'admin_init', 'sfwp_delete_all_stats_data' );
