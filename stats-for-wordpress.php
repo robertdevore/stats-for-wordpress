@@ -306,7 +306,7 @@ function sfwp_enqueue_scripts( $hook ) {
         return;
     }
 
-    wp_enqueue_script( 'chartjs', plugins_url( 'assets/js/chart.js', __FILE__ ), [], null, true );
+    wp_enqueue_script( 'chartjs', plugins_url( 'assets/js/charts.js', __FILE__ ), [], null, true );
 }
 add_action( 'admin_enqueue_scripts', 'sfwp_enqueue_scripts' );
 
