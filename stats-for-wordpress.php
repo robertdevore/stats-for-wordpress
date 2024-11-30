@@ -10,7 +10,7 @@
   * @wordpress-plugin
   *
   * Plugin Name: Stats for WordPress®
-  * Description: A simple analytics tracker for WordPress.
+  * Description: A simple analytics tracker for WordPress®.
   * Plugin URI:  https://github.com/robertdevore/stats-for-wordpress/
   * Version:     1.0.0
   * Author:      Robert DeVore
@@ -127,6 +127,11 @@ function sfwp_log_visit() {
     // Normalize the path by adding a trailing slash.
     $path = user_trailingslashit( $path );
 
+    // Canonicalize `/` entries to a single normalized home page path.
+    if ( $path === '/' || $path === '/index.php' ) {
+        $path = '/';
+    }
+
     // Reconstruct the page URL without query strings.
     $page = esc_url_raw( $path );
 
@@ -147,12 +152,16 @@ function sfwp_log_visit() {
     $table_name = $wpdb->prefix . 'sfwp_stats';
 
     // Detect referrer and filter out internal referrers.
-    $referrer = isset( $_SERVER['HTTP_REFERER'] ) ? esc_url_raw( $_SERVER['HTTP_REFERER'] ) : null;
-    $site_url = home_url();
+    $referrer  = isset( $_SERVER['HTTP_REFERER'] ) ? esc_url_raw( $_SERVER['HTTP_REFERER'] ) : null;
+    $site_url  = home_url();
+    $site_host = parse_url( $site_url, PHP_URL_HOST );
 
-    // Set to null if the referrer is internal.
-    if ( $referrer && stripos( $referrer, $site_url ) !== false ) {
-        $referrer = null;
+    // Set to null if the referrer is internal (match both http:// and https:// versions).
+    if ( $referrer ) {
+        $referrer_host = parse_url( $referrer, PHP_URL_HOST );
+        if ( $referrer_host === $site_host ) {
+            $referrer = null;
+        }
     }
 
     $date = current_time( 'Y-m-d' );
