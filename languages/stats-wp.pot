@@ -1,0 +1,112 @@
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Stats for WordPress®\n"
+"POT-Creation-Date: 2024-11-30 02:11-0500\n"
+"PO-Revision-Date: 2024-11-30 02:11-0500\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+"X-Generator: Poedit 3.5\n"
+"X-Poedit-Basepath: ..\n"
+"X-Poedit-Flags-xgettext: --add-comments=translators:\n"
+"X-Poedit-WPHeader: stats-for-wordpress.php\n"
+"X-Poedit-SourceCharset: UTF-8\n"
+"X-Poedit-KeywordsList: __;_e;_n:1,2;_x:1,2c;_ex:1,2c;_nx:4c,1,2;esc_attr__;"
+"esc_attr_e;esc_attr_x:1,2c;esc_html__;esc_html_e;esc_html_x:1,2c;_n_noop:1,2;"
+"_nx_noop:3c,1,2;__ngettext_noop:1,2\n"
+"X-Poedit-SearchPath-0: .\n"
+"X-Poedit-SearchPathExcluded-0: *.min.js\n"
+
+#. Plugin Name of the plugin/theme
+#: stats-for-wordpress.php:294 views/admin-stats-page.php:3
+msgid "Stats for WordPress®"
+msgstr ""
+
+#: stats-for-wordpress.php:295
+msgid "Stats"
+msgstr ""
+
+#: stats-for-wordpress.php:384
+msgid "Unauthorized access."
+msgstr ""
+
+#: stats-for-wordpress.php:450
+msgid "All stats data has been deleted."
+msgstr ""
+
+#: views/admin-stats-page.php:8
+msgid "Download"
+msgstr ""
+
+#: views/admin-stats-page.php:19
+msgid "Today's Most Visited Pages"
+msgstr ""
+
+#: views/admin-stats-page.php:23
+msgid "Page"
+msgstr ""
+
+#: views/admin-stats-page.php:24 views/admin-stats-page.php:94
+msgid "Unique Visits"
+msgstr ""
+
+#: views/admin-stats-page.php:25 views/admin-stats-page.php:99
+msgid "All Visits"
+msgstr ""
+
+#: views/admin-stats-page.php:43
+msgid "No data available for today."
+msgstr ""
+
+#: views/admin-stats-page.php:49
+msgid "404 Hits"
+msgstr ""
+
+#: views/admin-stats-page.php:50
+#, php-format
+msgid "Unique 404 Hits: %d, Total 404 Hits: %d"
+msgstr ""
+
+#: views/admin-stats-page.php:56
+msgid "Top Referrers"
+msgstr ""
+
+#: views/admin-stats-page.php:60
+msgid "Referrer"
+msgstr ""
+
+#: views/admin-stats-page.php:61 views/admin-stats-page.php:110
+msgid "Visits"
+msgstr ""
+
+#: views/admin-stats-page.php:69
+msgid "Direct Traffic"
+msgstr ""
+
+#: views/admin-stats-page.php:76
+msgid "No referrer data available for today."
+msgstr ""
+
+#: views/admin-stats-page.php:109
+msgid "Date"
+msgstr ""
+
+#. Plugin URI of the plugin/theme
+msgid "https://github.com/robertdevore/stats-for-wordpress/"
+msgstr ""
+
+#. Description of the plugin/theme
+msgid "A simple analytics tracker for WordPress®."
+msgstr ""
+
+#. Author of the plugin/theme
+msgid "Robert DeVore"
+msgstr ""
+
+#. Author URI of the plugin/theme
+msgid "https://robertdevore.com/"
+msgstr ""
