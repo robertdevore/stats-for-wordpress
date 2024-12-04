@@ -24,6 +24,18 @@
 
 defined( 'ABSPATH' ) || exit;
 
+require 'includes/plugin-update-checker/plugin-update-checker.php';
+use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
+
+$myUpdateChecker = PucFactory::buildUpdateChecker(
+	'https://github.com/robertdevore/stats-for-wordpress/',
+	__FILE__,
+	'stats-for-wordpress'
+);
+
+// Set the branch that contains the stable release.
+$myUpdateChecker->setBranch( 'main' );
+
 /**
  * Creates or updates the stats database table during plugin activation.
  * 
