@@ -46,6 +46,17 @@ use RobertDevore\WPComCheck\WPComPluginHandler;
 new WPComPluginHandler( plugin_basename( __FILE__ ), 'https://robertdevore.com/why-this-plugin-doesnt-support-wordpress-com-hosting/' );
 
 /**
+ * Load plugin text domain for localization.
+ *
+ * @since  1.1.0
+ * @return void
+ */
+function stats_wp_load_textdomain() {
+    load_plugin_textdomain( 'stats-wp', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
+}
+add_action( 'plugins_loaded', 'stats_wp_load_textdomain' );
+
+/**
  * Creates or updates the stats database table during plugin activation.
  * 
  * @since  1.0.0
