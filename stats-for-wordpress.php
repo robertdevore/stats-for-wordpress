@@ -245,47 +245,64 @@ function sfwp_is_crawler() {
     // Comprehensive list of known crawler/spider user agents.
     $crawlers = [
         // Search Engine Bots.
-        'Googlebot', 'Bingbot', 'Slurp', 'DuckDuckBot',
-        'Baiduspider', 'YandexBot', 'Sogou', 'Exabot',
-        'facebot', 'ia_archiver', 'SeznamBot', 'APIs-Google',
-        'Google-Read-Aloud', 'Google Favicon',
+        'Googlebot', 'Bingbot', 'Slurp', 'DuckDuckBot', 'Baiduspider',
+        'YandexBot', 'Sogou', 'Exabot', 'facebot', 'ia_archiver',
+        'SeznamBot', 'APIs-Google', 'Google-Read-Aloud', 'Google Favicon',
+        'YetiBot', 'Bytespider', 'Amazonbot', 'CoccocBot',
 
-        // SEO Tools.
-        'AhrefsBot', 'SemrushBot', 'DotBot', 'rogerbot',
-        'MJ12bot', 'Screaming Frog', 'Seokicks-Robot',
-        'LinkpadBot', 'MegaIndex', 'Mediapartners-Google',
-        'OnPageBot', 'Uptime.com Bot',
+        // SEO & Marketing Bots.
+        'AhrefsBot', 'SemrushBot', 'DotBot', 'rogerbot', 'MJ12bot',
+        'Screaming Frog', 'Seokicks-Robot', 'LinkpadBot', 'MegaIndex',
+        'Mediapartners-Google', 'OnPageBot', 'Uptime.com Bot', 'SerpstatBot',
+        'DataForSeoBot', 'Moz', 'SEMrush', 'SEOkicks',
 
         // AI Bots and Chatbots.
-        'ChatGPT', 'OpenAI', 'Bard', 'Claude',
-        'Anthropic', 'Jasper', 'Wit.ai', 'Dialogflow',
-        'ChatGPTBot', 'Google-ChatBot', 'DeepMind',
-        'HuggingFace', 'GPT', 'AI', 'Transformer',
+        'ChatGPT', 'OpenAI', 'Bard', 'Claude', 'Anthropic', 'Jasper',
+        'Wit.ai', 'Dialogflow', 'ChatGPTBot', 'Google-ChatBot', 'DeepMind',
+        'HuggingFace', 'GPT', 'AI', 'Transformer', 'BingPreview',
 
         // Website Monitoring/Testing Tools.
-        'UptimeRobot', 'Pingdom', 'Site24x7', 'Zabbix',
-        'Monitis', 'AppDynamics', 'StatusCake', 'BetterUptime',
+        'UptimeRobot', 'Pingdom', 'Site24x7', 'Zabbix', 'Monitis',
+        'AppDynamics', 'StatusCake', 'BetterUptime', 'NewRelicPinger',
+        'Catchpoint', 'GTmetrix', 'Cloudinary',
 
         // Social Media Bots.
         'Twitterbot', 'LinkedInBot', 'Slackbot', 'Pinterestbot',
         'WhatsApp', 'DiscordBot', 'TelegramBot', 'WeChatBot',
+        'Tumblr', 'SkypeUriPreview', 'SnapchatBot', 'FacebookBot',
 
-        // Scrapers.
-        'python-requests', 'PostmanRuntime', 'curl', 'wget',
-        'HTTrack', 'Scrapy', 'Java/1.', 'HttpClient',
-        'libwww-perl', 'PHP/', 'Go-http-client', 'Google-HTTP-Java-Client',
-        'HttpURLConnection', 'urllib', 'aiohttp', 'http-kit',
+        // Scrapers & Crawlers.
+        'python-requests', 'PostmanRuntime', 'curl', 'wget', 'HTTrack',
+        'Scrapy', 'Java/1.', 'HttpClient', 'libwww-perl', 'PHP/',
+        'Go-http-client', 'Google-HTTP-Java-Client', 'HttpURLConnection',
+        'urllib', 'aiohttp', 'http-kit', 'scraper', 'fetch',
 
         // Other Common Bots.
         'Applebot', 'FacebookExternalHit', 'CensysInspect',
         'Archive.org_bot', 'ZoominfoBot', 'heritrix', 'LinkChecker',
-        'Googlebot-Image', 'Googlebot-Video', 'PetalBot',
-        'BLEXBot', 'Siteimprove', 'DuckDuckBot', 'CCBot',
+        'Googlebot-Image', 'Googlebot-Video', 'PetalBot', 'BLEXBot',
+        'Siteimprove', 'DuckDuckBot', 'CCBot', 'AlexaWebCrawler',
 
-        // Developer Tools and Libraries.
-        'OkHttp', 'python-urllib', 'PycURL', 'aiohttp',
-        'Ruby', 'Node.js', 'HttpClient', 'Go-http-client',
-        'HttpRequest', 'Java/', 'Apache-HttpClient',
+        // Developer Tools & Libraries.
+        'OkHttp', 'python-urllib', 'PycURL', 'aiohttp', 'Ruby',
+        'Node.js', 'HttpClient', 'Go-http-client', 'HttpRequest',
+        'Java/', 'Apache-HttpClient', 'CURL', 'Wget',
+
+        // Headless Browsers & Automation Tools.
+        'HeadlessChrome', 'Puppeteer', 'PhantomJS', 'Selenium',
+        'Playwright', 'Trident', 'Electron', 'Node.js',
+        'Cloudflare-Workers', 'Googlebot-News',
+
+        // Vulnerability Scanners & Security Tools.
+        'WPScan', 'Nessus', 'Nikto', 'Acunetix', 'sqlmap',
+        'BurpSuite', 'ZAP', 'AppSpider', 'F-Secure',
+        'Nmap', 'Metasploit', 'OpenVAS', 'Qualys',
+        'Shodan', 'Censys', 'NetcraftSurveyAgent',
+
+        // API Clients.
+        'Postman', 'Insomnia', 'Swagger-Codegen', 'SoapUI',
+        'RestSharp', 'http-kit', 'HttpClient', 'Guzzle',
+        'Google-API-Java-Client', 'Axios', 'Fetch', 'GraphQL',
 
         // Miscellaneous Bots.
         'DataForSeoBot', 'SerpstatBot', 'netEstate NE Crawler',
@@ -293,25 +310,10 @@ function sfwp_is_crawler() {
         'probe', 'monitor', 'index', 'explorer',
         'Spider', 'Crawler', 'Robot', 'Headless',
 
-        // Headless Browsers.
-        'HeadlessChrome', 'Puppeteer', 'PhantomJS', 'Selenium',
-        'Playwright', 'Trident', 'Electron', 'Node.js',
-        
-        // Vulnerability Scanners and Security Tools.
-        'WPScan', 'Nessus', 'Nikto', 'Acunetix', 'sqlmap',
-        'BurpSuite', 'ZAP', 'AppSpider', 'F-Secure',
-        'Nmap', 'Metasploit', 'OpenVAS', 'Qualys',
-        'Shodan', 'Censys',
-
-        // API Clients.
-        'Postman', 'Insomnia', 'Swagger-Codegen', 'SoapUI',
-        'RestSharp', 'http-kit', 'HttpClient', 'Guzzle',
-        'Google-API-Java-Client', 'Axios', 'Fetch',
-
-        // Extensions to Catch Generic Bot Patterns.
-        'robot', 'spider', 'crawler', 'headless',
-        'scraper', 'scan', 'fetch', 'indexer', 'probe',
-        'checker', 'monitor', 'bot'
+        // Generic Bot Patterns.
+        'robot', 'spider', 'crawler', 'headless', 'scraper',
+        'scan', 'fetch', 'indexer', 'probe', 'checker',
+        'monitor', 'bot', 'search', 'preview'
     ];
 
     foreach ( $crawlers as $crawler ) {
