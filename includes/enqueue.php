@@ -17,8 +17,8 @@ function sfwp_enqueue_scripts( $hook ) {
 
     $plugin_url = plugin_dir_url( dirname( __FILE__ ) );
 
-    wp_enqueue_style( 'stats-wp', $plugin_url . 'assets/css/styles.css', [], SEO_WP_VERSION, 'all' );
+    wp_enqueue_style( 'stats-wp', $plugin_url . 'assets/css/styles.css', [], STATS_WP_VERSION, 'all' );
 
-    wp_enqueue_script( 'chartjs', $plugin_url . 'assets/js/charts.js', [], SEO_WP_VERSION, true );
+    wp_enqueue_script( 'chartjs', $plugin_url . 'assets/js/charts.js', [], STATS_WP_VERSION, true );
 }
 add_action( 'admin_enqueue_scripts', 'sfwp_enqueue_scripts' );

@@ -24,12 +24,14 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'SEO_WP_VERSION', '1.0.0' );
-define( 'SEO_WP_PLUGIN_DIR', plugin_dir_url( __FILE__ ) );
+define( 'STATS_WP_VERSION', '1.0.0' );
+define( 'STATS_WP_PLUGIN_DIR', plugin_dir_url( __FILE__ ) );
 
 require 'includes/db-table.php';
 require 'includes/enqueue.php';
 require 'includes/settings.php';
+
+register_activation_hook( __FILE__, 'sfwp_create_stats_table' );
 
 require 'vendor/plugin-update-checker/plugin-update-checker.php';
 use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
@@ -70,14 +72,73 @@ add_action( 'plugins_loaded', 'stats_wp_load_textdomain' );
  * @return void
  */
 function sfwp_log_visit() {
-    if ( is_admin() || current_user_can( 'manage_options' ) ) {
+    if ( is_user_logged_in() ) {
+        return;
+    }
+    static $already_logged = false;
+    if ( $already_logged ) {
+        error_log( "❌ Skipping duplicate execution in same request: {$_SERVER['REQUEST_URI']}" );
+        return;
+    }
+    $already_logged = true;
+
+    error_log( "🚀 Tracking Triggered: {$_SERVER['REQUEST_URI']} | Method: {$_SERVER['REQUEST_METHOD']} | Referrer: " . ($_SERVER['HTTP_REFERER'] ?? 'None') . " | Remote Addr: " . $_SERVER['REMOTE_ADDR'] );
+
+    // Detect loopback/internal requests
+    $site_url    = parse_url( home_url(), PHP_URL_HOST );
+    $remote_host = $_SERVER['REMOTE_ADDR'] ?? '';
+
+    if ( isset( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
+        $forwarded_ips = explode( ',', $_SERVER['HTTP_X_FORWARDED_FOR'] );
+        $remote_host = trim( $forwarded_ips[0] ); // First IP in the list
+    }
+
+    error_log("📌 Remote Address Detected: " . $remote_host );
+
+    error_log( "✅ Passed duplicate check" );
+
+    $request_uri = $_SERVER['REQUEST_URI'] ?? '';
+    $parsed_url  = parse_url( $request_uri );
+    $path        = $parsed_url['path'] ?? '';
+
+    // Check for known internal requests, but allow frontend user tracking.
+    if ( is_admin() || wp_doing_ajax() || wp_doing_cron() || wp_is_json_request() || defined( 'DOING_CRON' ) || defined( 'REST_REQUEST' ) || $remote_host === '127.0.0.1' || $remote_host === 'localhost' || $remote_host === $site_url ) {
+        error_log( "❌ Skipping internal/loopback request: {$_SERVER['REQUEST_URI']} (Detected Internal Host)" );
         return;
     }
 
+    // Additional check to avoid skipping valid frontend requests.
+    if ( stripos( $request_uri, '/?wc-ajax=' ) !== false ) {
+        error_log( "❌ Skipping WooCommerce AJAX request: {$_SERVER['REQUEST_URI']}" );
+        return;
+    }
+
+    error_log( "✅ Passed admin/AJAX/REST check" );
+
+    if ( isset( $_SERVER['HTTP_SEC_FETCH_MODE'] ) && $_SERVER['HTTP_SEC_FETCH_MODE'] !== 'navigate' ) {
+        error_log( "❌ Skipping preloaded/fetch request: {$_SERVER['REQUEST_URI']}" );
+        return;
+    }
+
+    error_log( "✅ Passed prefetch check" );
+
+    // Remove query strings before checking file types
+    $clean_request_uri = strtok( $request_uri, '?' );
+
+    // Block all static files from being tracked
+    if ( preg_match( '/\.(css|js|jpg|jpeg|png|gif|svg|webp|ico|woff|woff2|ttf|eot|otf|ttc|font|mp4|mp3|avi|mov|mkv|flv|wmv|pdf|doc|docx|xls|xlsx|ppt|pptx|zip|rar|tar|gz|7z|bz2)$/i', $clean_request_uri ) ) {
+        error_log( "❌ Skipping static file request: $request_uri" );
+        return;
+    }
+    
+    error_log( "✅ Tracking actual frontend visit: $request_uri" );
+    
     // Exclude known crawlers/spiders.
     if ( sfwp_is_crawler() ) {
         return;
     }
+
+    error_log( "✅ Tracking passed the sfwp_is_crawler function: $request_uri" );
 
     // Exclude favicon, sitemap, WordPress®-specific paths, and other non-page resources.
     $excluded_paths = [
@@ -124,13 +185,6 @@ function sfwp_log_visit() {
         '/wp-content/plugins/',
         '/wp-content/themes/',
 
-        // Static file types (styles, scripts, images, etc).
-        '.css', '.js', '.jpg', '.jpeg', '.png', '.gif', '.svg', '.webp', '.ico',
-        '.woff', '.woff2', '.ttf', '.eot', '.otf', '.ttc', '.font',
-        '.mp4', '.mp3', '.avi', '.mov', '.mkv', '.flv', '.wmv',
-        '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx',
-        '.zip', '.rar', '.tar', '.gz', '.7z', '.bz2',
-
         // Feeds and API endpoints.
         '/feed/', '/rss/', '/rss2/', '/atom/', '/comments/feed/',
         '/trackback/', '/wp-json/wp/v2/comments/', '/wp-json/wp/v2/posts/',
@@ -173,14 +227,17 @@ function sfwp_log_visit() {
     }
 
     // Reconstruct the page URL without query strings.
-    $page = esc_url_raw( $path );
+    $page = strtok( esc_url_raw( $path ), '?' );
 
     // Loop through excluded paths.
     foreach ( $excluded_paths as $excluded ) {
         if ( stripos( $request_uri, $excluded ) !== false || stripos( $path, $excluded ) !== false ) {
+            error_log( "❌ Skipping request due to exclusion: {$request_uri} (Matched: {$excluded})" );
             return;
         }
-    }
+    }    
+
+    error_log( "✅ Tracking passed the excluded paths check: $request_uri" );
 
     // Handle 404 pages separately.
     if ( is_404() ) {
@@ -192,7 +249,9 @@ function sfwp_log_visit() {
     $table_name = $wpdb->prefix . 'sfwp_stats';
 
     // Detect referrer and filter out internal referrers.
-    $referrer  = isset( $_SERVER['HTTP_REFERER'] ) ? esc_url_raw( $_SERVER['HTTP_REFERER'] ) : null;
+    $referrer = isset( $_SERVER['HTTP_REFERER'] ) && ! empty( $_SERVER['HTTP_REFERER'] )
+    ? esc_url_raw( $_SERVER['HTTP_REFERER'] )
+    : 'Direct';
     $site_url  = home_url();
     $site_host = parse_url( $site_url, PHP_URL_HOST );
 
@@ -209,29 +268,49 @@ function sfwp_log_visit() {
     // Check if it's a unique visit using a cookie.
     $is_unique = ! isset( $_COOKIE['sfwp_unique_visit'] );
 
-    if ( $is_unique ) {
-        setcookie( 'sfwp_unique_visit', '1', time() + DAY_IN_SECONDS, COOKIEPATH, COOKIE_DOMAIN, is_ssl(), true );
+    // NEW: Prevent double-counting in a fresh session
+    if ( headers_sent() ) {
+        error_log( "❌ Cannot set cookie (headers already sent), skipping duplicate visit: {$_SERVER['REQUEST_URI']}" );
+    } elseif ( $is_unique ) {
+        setcookie( 'sfwp_unique_visit', '1', time() + DAY_IN_SECONDS, '/', $_SERVER['HTTP_HOST'], is_ssl(), true );
+        $_COOKIE['sfwp_unique_visit'] = '1';
+    } else {
+        error_log( "❌ Skipping repeat visit (cookie already set): {$_SERVER['REQUEST_URI']}" );
     }
 
-    // Update or insert visit count.
-    $wpdb->query(
-        $wpdb->prepare(
-            "INSERT INTO $table_name (date, page, referrer, unique_visits, all_visits)
-            VALUES ( %s, %s, %s, %d, %d )
-            ON DUPLICATE KEY UPDATE 
-                unique_visits = unique_visits + %d, 
-                all_visits = all_visits + 1",
-            $date,
-            $page,
-            $referrer,
-            $is_unique ? 1 : 0,
-            1,
-            $is_unique ? 1 : 0
-        )
-    );
+    error_log( "⚡ Running SQL query..." );
 
+    // Update or insert visit count.
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'sfwp_stats';
+    
+    error_log("⚡ Running SQL query for page: $page"); // Debug log before execution
+    
+    $query = $wpdb->prepare(
+        "INSERT INTO $table_name (date, page, referrer, unique_visits, all_visits)
+        VALUES (%s, %s, %s, %d, %d)
+        ON DUPLICATE KEY UPDATE 
+            unique_visits = unique_visits + VALUES(unique_visits), 
+            all_visits = all_visits + VALUES(all_visits)",
+        $date,
+        $page,
+        $referrer,
+        $is_unique ? 1 : 0,
+        1
+    );
+        
+    error_log("🛠 SQL Query Prepared: " . print_r($query, true)); // Logs the prepared query string
+    
+    $result = $wpdb->query( $query );
+    
+    if ( $result === false ) {
+        error_log( "❌ SQL Error: " . $wpdb->last_error ); // Log MySQL errors
+    } else {
+        error_log( "✅ SQL executed successfully!" ); // Confirm execution
+    }
+        
 }
-add_action( 'wp', 'sfwp_log_visit' );
+add_action( 'wp', 'sfwp_log_visit', 20 );
 
 /**
  * Determines if the request is from a crawler/spider.
@@ -245,64 +324,47 @@ function sfwp_is_crawler() {
     // Comprehensive list of known crawler/spider user agents.
     $crawlers = [
         // Search Engine Bots.
-        'Googlebot', 'Bingbot', 'Slurp', 'DuckDuckBot', 'Baiduspider',
-        'YandexBot', 'Sogou', 'Exabot', 'facebot', 'ia_archiver',
-        'SeznamBot', 'APIs-Google', 'Google-Read-Aloud', 'Google Favicon',
-        'YetiBot', 'Bytespider', 'Amazonbot', 'CoccocBot',
+        'Googlebot', 'Bingbot', 'Slurp', 'DuckDuckBot',
+        'Baiduspider', 'YandexBot', 'Sogou', 'Exabot',
+        'facebot', 'ia_archiver', 'SeznamBot', 'APIs-Google',
+        'Google-Read-Aloud', 'Google Favicon',
 
-        // SEO & Marketing Bots.
-        'AhrefsBot', 'SemrushBot', 'DotBot', 'rogerbot', 'MJ12bot',
-        'Screaming Frog', 'Seokicks-Robot', 'LinkpadBot', 'MegaIndex',
-        'Mediapartners-Google', 'OnPageBot', 'Uptime.com Bot', 'SerpstatBot',
-        'DataForSeoBot', 'Moz', 'SEMrush', 'SEOkicks',
+        // SEO Tools.
+        'AhrefsBot', 'SemrushBot', 'DotBot', 'rogerbot',
+        'MJ12bot', 'Screaming Frog', 'Seokicks-Robot',
+        'LinkpadBot', 'MegaIndex', 'Mediapartners-Google',
+        'OnPageBot', 'Uptime.com Bot',
 
         // AI Bots and Chatbots.
-        'ChatGPT', 'OpenAI', 'Bard', 'Claude', 'Anthropic', 'Jasper',
-        'Wit.ai', 'Dialogflow', 'ChatGPTBot', 'Google-ChatBot', 'DeepMind',
-        'HuggingFace', 'GPT', 'AI', 'Transformer', 'BingPreview',
+        'ChatGPT', 'OpenAI', 'Bard', 'Claude',
+        'Anthropic', 'Jasper', 'Wit.ai', 'Dialogflow',
+        'ChatGPTBot', 'Google-ChatBot', 'DeepMind',
+        'HuggingFace', 'GPT', 'AI', 'Transformer',
 
         // Website Monitoring/Testing Tools.
-        'UptimeRobot', 'Pingdom', 'Site24x7', 'Zabbix', 'Monitis',
-        'AppDynamics', 'StatusCake', 'BetterUptime', 'NewRelicPinger',
-        'Catchpoint', 'GTmetrix', 'Cloudinary',
+        'UptimeRobot', 'Pingdom', 'Site24x7', 'Zabbix',
+        'Monitis', 'AppDynamics', 'StatusCake', 'BetterUptime',
 
         // Social Media Bots.
         'Twitterbot', 'LinkedInBot', 'Slackbot', 'Pinterestbot',
         'WhatsApp', 'DiscordBot', 'TelegramBot', 'WeChatBot',
-        'Tumblr', 'SkypeUriPreview', 'SnapchatBot', 'FacebookBot',
 
-        // Scrapers & Crawlers.
-        'python-requests', 'PostmanRuntime', 'curl', 'wget', 'HTTrack',
-        'Scrapy', 'Java/1.', 'HttpClient', 'libwww-perl', 'PHP/',
-        'Go-http-client', 'Google-HTTP-Java-Client', 'HttpURLConnection',
-        'urllib', 'aiohttp', 'http-kit', 'scraper', 'fetch',
+        // Scrapers.
+        'python-requests', 'PostmanRuntime', 'curl', 'wget',
+        'HTTrack', 'Scrapy', 'Java/1.', 'HttpClient',
+        'libwww-perl', 'PHP/', 'Go-http-client', 'Google-HTTP-Java-Client',
+        'HttpURLConnection', 'urllib', 'aiohttp', 'http-kit',
 
         // Other Common Bots.
         'Applebot', 'FacebookExternalHit', 'CensysInspect',
         'Archive.org_bot', 'ZoominfoBot', 'heritrix', 'LinkChecker',
-        'Googlebot-Image', 'Googlebot-Video', 'PetalBot', 'BLEXBot',
-        'Siteimprove', 'DuckDuckBot', 'CCBot', 'AlexaWebCrawler',
+        'Googlebot-Image', 'Googlebot-Video', 'PetalBot',
+        'BLEXBot', 'Siteimprove', 'DuckDuckBot', 'CCBot',
 
-        // Developer Tools & Libraries.
-        'OkHttp', 'python-urllib', 'PycURL', 'aiohttp', 'Ruby',
-        'Node.js', 'HttpClient', 'Go-http-client', 'HttpRequest',
-        'Java/', 'Apache-HttpClient', 'CURL', 'Wget',
-
-        // Headless Browsers & Automation Tools.
-        'HeadlessChrome', 'Puppeteer', 'PhantomJS', 'Selenium',
-        'Playwright', 'Trident', 'Electron', 'Node.js',
-        'Cloudflare-Workers', 'Googlebot-News',
-
-        // Vulnerability Scanners & Security Tools.
-        'WPScan', 'Nessus', 'Nikto', 'Acunetix', 'sqlmap',
-        'BurpSuite', 'ZAP', 'AppSpider', 'F-Secure',
-        'Nmap', 'Metasploit', 'OpenVAS', 'Qualys',
-        'Shodan', 'Censys', 'NetcraftSurveyAgent',
-
-        // API Clients.
-        'Postman', 'Insomnia', 'Swagger-Codegen', 'SoapUI',
-        'RestSharp', 'http-kit', 'HttpClient', 'Guzzle',
-        'Google-API-Java-Client', 'Axios', 'Fetch', 'GraphQL',
+        // Developer Tools and Libraries.
+        'OkHttp', 'python-urllib', 'PycURL', 'aiohttp',
+        'Ruby', 'Node.js', 'HttpClient', 'Go-http-client',
+        'HttpRequest', 'Java/', 'Apache-HttpClient',
 
         // Miscellaneous Bots.
         'DataForSeoBot', 'SerpstatBot', 'netEstate NE Crawler',
@@ -310,10 +372,25 @@ function sfwp_is_crawler() {
         'probe', 'monitor', 'index', 'explorer',
         'Spider', 'Crawler', 'Robot', 'Headless',
 
-        // Generic Bot Patterns.
-        'robot', 'spider', 'crawler', 'headless', 'scraper',
-        'scan', 'fetch', 'indexer', 'probe', 'checker',
-        'monitor', 'bot', 'search', 'preview'
+        // Headless Browsers.
+        'HeadlessChrome', 'Puppeteer', 'PhantomJS', 'Selenium',
+        'Playwright', 'Trident', 'Electron', 'Node.js',
+        
+        // Vulnerability Scanners and Security Tools.
+        'WPScan', 'Nessus', 'Nikto', 'Acunetix', 'sqlmap',
+        'BurpSuite', 'ZAP', 'AppSpider', 'F-Secure',
+        'Nmap', 'Metasploit', 'OpenVAS', 'Qualys',
+        'Shodan', 'Censys',
+
+        // API Clients.
+        'Postman', 'Insomnia', 'Swagger-Codegen', 'SoapUI',
+        'RestSharp', 'http-kit', 'HttpClient', 'Guzzle',
+        'Google-API-Java-Client', 'Axios', 'Fetch',
+
+        // Extensions to Catch Generic Bot Patterns.
+        'robot', 'spider', 'crawler', 'headless',
+        'scraper', 'scan', 'fetch', 'indexer', 'probe',
+        'checker', 'monitor', 'bot'
     ];
 
     foreach ( $crawlers as $crawler ) {

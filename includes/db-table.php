@@ -10,9 +10,14 @@ defined( 'ABSPATH' ) || exit;
  */
 function sfwp_create_stats_table() {
     global $wpdb;
-
-    $table_name      = $wpdb->prefix . 'sfwp_stats';
+    
+    $table_name = $wpdb->prefix . 'sfwp_stats';
     $charset_collate = $wpdb->get_charset_collate();
+
+    // Check if the table already exists
+    if ( $wpdb->get_var( "SHOW TABLES LIKE '$table_name'" ) === $table_name ) {
+        return;
+    }
 
     $sql = "CREATE TABLE $table_name (
         id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -28,4 +33,3 @@ function sfwp_create_stats_table() {
     require_once ABSPATH . 'wp-admin/includes/upgrade.php';
     dbDelta( $sql );
 }
-register_activation_hook( __FILE__, 'sfwp_create_stats_table' );
