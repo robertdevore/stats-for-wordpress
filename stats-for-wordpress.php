@@ -70,7 +70,7 @@ add_action( 'plugins_loaded', 'stats_wp_load_textdomain' );
  * @return void
  */
 function sfwp_log_visit() {
-    if ( is_admin() ) {
+    if ( is_admin() || current_user_can( 'manage_options' ) ) {
         return;
     }
 
@@ -87,15 +87,39 @@ function sfwp_log_visit() {
         '/sitemap.xml',
         '/sitemap_index.xml',
         '/wp-json/',
+        '/wp-json/wp/',
+        '/wp-json/oembed/',
+        '/wp-json/contact-form-7/',
+        '/wp-json/wc/',
+        '/wp-json/jetpack/',
         '/wp-login.php',
+        '/wp-register.php',
         '/wp-cron.php',
         '/xmlrpc.php',
         '/wp-trackback.php',
+        '/wp-comments-post.php',
         '/wp-admin/admin-ajax.php',
         '/?wc-ajax=get_refreshed_fragments',
+        '/?wc-ajax=update_order_review',
+        '/?wc-ajax=apply_coupon',
+        '/?wc-ajax=remove_coupon',
+        '/?wc-ajax=add_to_cart',
+        '/?wc-ajax=remove_from_cart',
+        '/?wc-ajax=checkout',
+        '/?wc-ajax=get_variation',
+        '/?wc-ajax=update_shipping_method',
+        '/?wc-ajax=get_cart_contents',
+        '/?wc-ajax=update_cart',
+        '/?wc-ajax=checkout_order_review',
+        '/?wc-ajax=update_customer',
+        '/?wc-ajax=get_customer_details',
 
         // WordPress® admin and asset paths.
         '/wp-admin/',
+        '/wp-admin/load-scripts.php',
+        '/wp-admin/load-styles.php',
+        '/wp-admin/async-upload.php',
+        '/wp-admin/customize.php',
         '/wp-content/uploads/',
         '/wp-content/plugins/',
         '/wp-content/themes/',
@@ -109,7 +133,7 @@ function sfwp_log_visit() {
 
         // Feeds and API endpoints.
         '/feed/', '/rss/', '/rss2/', '/atom/', '/comments/feed/',
-        '/trackback/',
+        '/trackback/', '/wp-json/wp/v2/comments/', '/wp-json/wp/v2/posts/',
 
         // Common WordPress® plugin paths.
         '/wp-content/plugins/woocommerce/',
@@ -117,17 +141,22 @@ function sfwp_log_visit() {
         '/wp-content/plugins/jetpack/',
         '/wp-content/plugins/contact-form-7/',
         '/wp-content/plugins/wp-rocket/',
+        '/wp-content/plugins/wpforms/',
+        '/wp-content/plugins/litespeed-cache/',
+        '/wp-content/plugins/wp-super-cache/',
+        '/wp-content/plugins/all-in-one-seo-pack/',
+        '/wp-content/plugins/yoast/',
+        '/wp-content/plugins/google-site-kit/',
         'breeze_check_cache_available',
 
         // Query string patterns often used in WordPress®.
-        '?ver=',
-        '?preview=',
-        '?attachment_id=',
-        '?utm_',
-        '?amp=',
+        '?ver=', '?preview=', '?attachment_id=', '?utm_', '?amp=',
+        '?fbclid=', '?gclid=', '?ref=', '?_ga=', '?_gl=', '?_hsenc=', '?_openstat=',
 
         // Additional patterns.
-        '/.well-known/',
+        '/.well-known/', '/.well-known/security.txt', '/.well-known/assetlinks.json',
+        '/.well-known/apple-app-site-association', '/.well-known/openid-configuration',
+        '/.well-known/change-password',
     ];
 
     // Extract the request path.
