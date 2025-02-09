@@ -24,7 +24,14 @@
 
 defined( 'ABSPATH' ) || exit;
 
-require 'includes/plugin-update-checker/plugin-update-checker.php';
+define( 'SEO_WP_VERSION', '1.0.0' );
+define( 'SEO_WP_PLUGIN_DIR', plugin_dir_url( __FILE__ ) );
+
+require 'includes/db-table.php';
+require 'includes/enqueue.php';
+require 'includes/settings.php';
+
+require 'vendor/plugin-update-checker/plugin-update-checker.php';
 use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
 
 $myUpdateChecker = PucFactory::buildUpdateChecker(
@@ -55,34 +62,6 @@ function stats_wp_load_textdomain() {
     load_plugin_textdomain( 'stats-wp', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
 }
 add_action( 'plugins_loaded', 'stats_wp_load_textdomain' );
-
-/**
- * Creates or updates the stats database table during plugin activation.
- * 
- * @since  1.0.0
- * @return void
- */
-function sfwp_create_stats_table() {
-    global $wpdb;
-
-    $table_name      = $wpdb->prefix . 'sfwp_stats';
-    $charset_collate = $wpdb->get_charset_collate();
-
-    $sql = "CREATE TABLE $table_name (
-        id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
-        date DATE NOT NULL,
-        page VARCHAR(255) NOT NULL,
-        referrer VARCHAR(255) DEFAULT NULL,
-        unique_visits INT(11) NOT NULL DEFAULT 0,
-        all_visits INT(11) NOT NULL DEFAULT 0,
-        PRIMARY KEY (id),
-        UNIQUE KEY page_date_referrer (page, date, referrer)
-    ) $charset_collate;";
-
-    require_once ABSPATH . 'wp-admin/includes/upgrade.php';
-    dbDelta( $sql );
-}
-register_activation_hook( __FILE__, 'sfwp_create_stats_table' );
 
 /**
  * Logs visits on every page load, excluding crawlers and non-page resources.
@@ -316,96 +295,6 @@ function sfwp_is_crawler() {
 }
 
 /**
- * Registers a settings page for viewing stats.
- * 
- * @since  1.0.0
- * @return void
- */
-function sfwp_register_settings_page() {
-    add_menu_page(
-        esc_html__( 'Stats for WordPress®', 'sfwp' ),
-        esc_html__( 'Stats', 'sfwp' ),
-        'manage_options',
-        'sfwp-stats',
-        'sfwp_render_stats_page',
-        'dashicons-chart-bar',
-        26
-    );
-}
-add_action( 'admin_menu', 'sfwp_register_settings_page' );
-
-/**
- * Enqueues Chart.js for stats visualization.
- *
- * @param string $hook Current admin page hook.
- * 
- * @since  1.0.0
- * @return void
- */
-function sfwp_enqueue_scripts( $hook ) {
-    if ( $hook !== 'toplevel_page_sfwp-stats' ) {
-        return;
-    }
-
-    wp_enqueue_script( 'chartjs', plugins_url( 'assets/js/charts.js', __FILE__ ), [], null, true );
-}
-add_action( 'admin_enqueue_scripts', 'sfwp_enqueue_scripts' );
-
-/**
- * Renders the stats page in the admin area.
- * 
- * @since  1.0.0
- * @return void
- */
-function sfwp_render_stats_page() {
-    global $wpdb;
-
-    $table_name = $wpdb->prefix . 'sfwp_stats';
-
-    // Fetch daily data for the past week, excluding 404 pages.
-    $results = $wpdb->get_results( "
-        SELECT date, SUM(unique_visits) AS unique_visits, SUM(all_visits) AS all_visits
-        FROM $table_name
-        WHERE page != '/404'
-        GROUP BY date
-        ORDER BY date DESC
-        LIMIT 7
-    " );
-
-    $dates         = array_reverse( array_column( $results, 'date' ) );
-    $unique_visits = array_reverse( array_column( $results, 'unique_visits' ) );
-    $all_visits    = array_reverse( array_column( $results, 'all_visits' ) );
-
-    // Fetch today's most visited pages, excluding 404 pages.
-    $today      = current_time( 'Y-m-d' );
-    $page_data  = $wpdb->get_results( $wpdb->prepare( "
-        SELECT page, unique_visits, all_visits
-        FROM $table_name
-        WHERE date = %s AND page != '/404'
-        ORDER BY all_visits DESC
-    ", $today ) );
-
-    // Fetch top referrers for today.
-    $referrer_data = $wpdb->get_results( $wpdb->prepare( "
-        SELECT referrer, SUM(all_visits) AS visits
-        FROM $table_name
-        WHERE date = %s AND page != '/404'
-        GROUP BY referrer
-        ORDER BY visits DESC
-        LIMIT 20
-    ", $today ) );
-
-    // Fetch 404 hits for today.
-    $not_found_data = $wpdb->get_row( $wpdb->prepare( "
-        SELECT SUM(unique_visits) AS unique_visits, SUM(all_visits) AS all_visits
-        FROM $table_name
-        WHERE date = %s AND page = '/404'
-    ", $today ) );
-
-    include plugin_dir_path( __FILE__ ) . 'views/admin-stats-page.php';
-}
-
-/**
  * Handles the download of historical traffic data.
  * 
  * @since 1.0.0
@@ -453,14 +342,6 @@ function sfwp_download_stats() {
     exit;
 }
 add_action( 'admin_post_sfwp_download_stats', 'sfwp_download_stats' );
-
-function sfwp_update_database() {
-    global $wpdb;
-    $table_name = $wpdb->prefix . 'sfwp_stats';
-
-    $wpdb->query( "ALTER TABLE $table_name ADD COLUMN referrer VARCHAR(255) DEFAULT NULL AFTER page;" );
-}
-register_activation_hook( __FILE__, 'sfwp_update_database' );
 
 /**
  * Deletes all data from the stats table.
