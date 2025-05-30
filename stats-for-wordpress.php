@@ -174,6 +174,28 @@ function sfwp_log_visit() {
         '/?wc-ajax=checkout_order_review',
         '/?wc-ajax=update_customer',
         '/?wc-ajax=get_customer_details',
+        '/?wc-ajax=update_checkout',
+        '/?wc-ajax=update_payment_method',
+        '/?wc-ajax=update_order_notes',
+        '/?wc-ajax=update_cart_totals',
+        '/?wc-ajax=update_cart_action',
+        '/?wc-ajax=update_cart_item',
+        '/?wc-ajax=update_cart_item_quantity',
+        '/?wc-ajax=update_cart_item_variation',
+        '/?wc-ajax=update_cart_item_meta',
+        '/?wc-ajax=update_cart_item_data',
+        '/?wc-ajax=update_cart_item_price',
+        '/?wc-ajax=update_cart_item_tax',
+        '/?wc-ajax=update_cart_item_discount',
+        '/?wc-ajax=update_cart_item_shipping',
+        '/?wc-ajax=update_cart_item_total',
+        '/?wc-ajax=update_cart_item_subtotal',
+        '/?wc-ajax=update_cart_item_tax_total',
+        '/?wc-ajax=update_cart_item_shipping_total',
+        '/?wc-ajax=update_cart_item_discount_total',
+        '/?wc-ajax=update_cart_item_total_tax',
+        '/?wc-ajax=update_cart_item_total_discount',
+        '/?wc-ajax=update_cart_item_total_shipping',
 
         // WordPress® admin and asset paths.
         '/wp-admin/',
@@ -201,16 +223,21 @@ function sfwp_log_visit() {
         '/wp-content/plugins/all-in-one-seo-pack/',
         '/wp-content/plugins/yoast/',
         '/wp-content/plugins/google-site-kit/',
+        '/wp-content/plugins/akismet/',
+        '/wp-content/plugins/wordfence/',
+        '/wp-content/plugins/breeze/',
         'breeze_check_cache_available',
 
         // Query string patterns often used in WordPress®.
         '?ver=', '?preview=', '?attachment_id=', '?utm_', '?amp=',
         '?fbclid=', '?gclid=', '?ref=', '?_ga=', '?_gl=', '?_hsenc=', '?_openstat=',
+        '?_hsmi=', '?_hsq=', '?_hsid=', '?_hssc=', '?_hshc=',
 
         // Additional patterns.
         '/.well-known/', '/.well-known/security.txt', '/.well-known/assetlinks.json',
         '/.well-known/apple-app-site-association', '/.well-known/openid-configuration',
-        '/.well-known/change-password',
+        '/.well-known/change-password', '/wp-content/cache/', '/wp-content/backups/',
+        '/wp-content/backup-db/', '/wp-content/upgrade/', '/wp-content/mu-plugins/',
     ];
 
     // Extract the request path.
