@@ -12,7 +12,7 @@
   * Plugin Name: Stats for WordPress®
   * Description: A simple analytics tracker for WordPress®.
   * Plugin URI:  https://github.com/robertdevore/stats-for-wordpress/
-  * Version:     1.0.0
+  * Version:     1.1.0
   * Author:      Robert DeVore
   * Author URI:  https://robertdevore.com/
   * License:     GPL-2.0+
@@ -24,7 +24,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'STATS_WP_VERSION', '1.0.0' );
+define( 'STATS_WP_VERSION', '1.1.0' );
 define( 'STATS_WP_PLUGIN_DIR', plugin_dir_url( __FILE__ ) );
 
 require 'includes/db-table.php';
