@@ -60,7 +60,7 @@ function sfwp_render_stats_page() {
     $referrer_data = $wpdb->get_results( $wpdb->prepare( "
         SELECT referrer, SUM(all_visits) AS visits
         FROM $table_name
-        WHERE date = %s AND page != '/404'
+        WHERE date = %s AND page != '/404' AND referrer IS NOT NULL
         GROUP BY referrer
         ORDER BY visits DESC
         LIMIT 20
