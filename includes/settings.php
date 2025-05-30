@@ -49,9 +49,10 @@ function sfwp_render_stats_page() {
     // Fetch today's most visited pages, excluding 404 pages.
     $today      = current_time( 'Y-m-d' );
     $page_data  = $wpdb->get_results( $wpdb->prepare( "
-        SELECT page, unique_visits, all_visits
+        SELECT page, SUM(unique_visits) AS unique_visits, SUM(all_visits) AS all_visits
         FROM $table_name
         WHERE date = %s AND page != '/404'
+        GROUP BY page
         ORDER BY all_visits DESC
     ", $today ) );
 
